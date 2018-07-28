@@ -10,6 +10,8 @@ Disponibilizar un contrato que permita:
     - Creador de tickets.
     - Vendedor de tickets.
 - Determinar cuentas de ganacias, su porcentaje de distribución, y prioridad (opcional).
+- Indicar distintas fechas del evento (de forma fija o recurrente).
+- Indicar distintas ubicaciones por evento y su cantidad.
 - Crear tickets para un evento optando por alguna de las siguientes opciones.
     - Mismo precio y sin numeración.
     - Distintos precios y sin numeración.
@@ -26,7 +28,7 @@ Disponibilizar un contrato que permita:
 - Restricciones de evento privado (solo ciertas cuentas pueden comprar).
 - Limites de cantidad de tickets comprados por una misma cuenta.
 - Inhabilitar el uso del contrato.
-
+- Crear el Lugar del evento.
 
 Cliente
 -------
@@ -65,3 +67,36 @@ utilizado.
 Notar que el precio es fijo, y no proporcional al valor del ticket, ya que
 creo que vender un ticket de 100 dólares o uno de 5 dólares es igual de
 importante.
+
+Consideraciones
+---------------
+
+Todo debería empezar definiendo el lugar del evento, y su layout standard basado en sus
+distintos sectores y ubicaciones por sector.
+Debe ser definida la capacidad a nivel de sector o a nivel de ubicación.
+
+Observación: Se hace la diferencia entre sector y ubicación de forma que se pueda
+por ejemplo definir el precio a nivel de sector, pero la ubicación sea numerada.
+
+El dueño del lugar podría colocar el lugar en alquiler de forma que para que alguien
+pueda utilizarlo, tenga que:
+- Abonar un monto fijo.
+- Dar una participación de las entradas vendidas del evento.
+Podria llegar a existir algún tipo de politica de cancelación.
+
+El creador del evento tendría que:
+- Crear el evento.
+- Asignar las fechas del evento.
+- Indicar los lugares donde sera llevado a cabo el evento.
+- En caso de precisar, modificar el layout standard de cada lugar.
+- Indicar los precios, con posibilidad de hacerlo a distintos niveles de detalle:
+    - Evento
+    - Lugar
+    - Sector
+    - Ubicación
+    - Fecha/Evento
+    - Fecha/Lugar
+    - Fecha/Sector
+    - Fecha/Ubicación
+
+
