@@ -20,7 +20,9 @@ contract Event is Ownable{
         name = _name;
     }
 
-    function addLocation(string _name, uint disponibility, uint price) public {
+    function addLocation(string _name, uint disponibility,
+        uint price) onlyOwner public {
+
         uint ID = locations.length;
         locations.push(Locations.Location(_name, disponibility, price));
         emit LocationAdded(address(this), ID);

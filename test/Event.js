@@ -53,7 +53,8 @@ contract('Event test', async (accounts) => {
         let receipt = await event.addLocation(
             locationName,
             locationDisponibility,
-            locationPrice
+            locationPrice,
+            {from: eventAccount}
             );
 
         assert.equal(receipt.logs.length, 1, "an event was triggered");
@@ -68,6 +69,25 @@ contract('Event test', async (accounts) => {
         assert.equal(location.name, locationName, "The location name is correct");
         assert.equal(location.disponibility, locationDisponibility, "The location disponibility is correct");
         assert.equal(location.price, locationPrice, "The location price is correct");
+
+    });
+
+    it("Should only the event owner can add a location.", async () => {
+
+        let locationName = "Location B";
+        let locationDisponibility = 101;
+        let locationPrice = web3.toWei(.51, 'ether');
+
+        try {
+            await event.addLocation(
+                locationName,
+                locationDisponibility,
+                locationPrice
+                );
+            assert.fail("Only the event owner can add a location.");
+        } catch (e) {
+            assert(e.message.indexOf('revert') >= 0, "The error message should contain revert.");
+        }
 
     });
 
