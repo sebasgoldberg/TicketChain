@@ -1,15 +1,16 @@
 var Ownable = artifacts.require("../contracts/Ownable.sol");
-var Locations = artifacts.require("../contracts/Locations.sol");
+var ArrayUtil = artifacts.require("../contracts/ArrayUtil.sol");
 var Event = artifacts.require("../contracts/Event.sol");
 var TicketChain = artifacts.require("../contracts/TicketChain.sol");
 
-module.exports = function(deployer) {
-  deployer.deploy(Ownable);
-  deployer.deploy(Locations);
-  deployer.link(Ownable, Event);
-  deployer.link(Locations, Event);
-  deployer.deploy(Event,0,'');
-  deployer.link(Ownable, TicketChain);
-  deployer.link(Event, TicketChain);
-  deployer.deploy(TicketChain);
+module.exports = async(deployer) => {
+  await deployer
+  await deployer.deploy(Ownable);
+  await deployer.deploy(ArrayUtil);
+  await deployer.link(Ownable, Event);
+  await deployer.link(ArrayUtil, Event);
+  await deployer.deploy(Event,0,'');
+  await deployer.link(Ownable, TicketChain);
+  await deployer.link(Event, TicketChain);
+  await deployer.deploy(TicketChain);
 };
