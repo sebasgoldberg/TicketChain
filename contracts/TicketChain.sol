@@ -13,6 +13,10 @@ contract TicketChain is Ownable{
 
     event EventCreated(address event_);
 
+    function eventsCount(address owner) public view returns(uint) {
+        return events[owner].length;
+    }
+
     function createEvent(string name) public{
         address event_ = new Event(msg.sender, name);
         events[msg.sender].push(event_);

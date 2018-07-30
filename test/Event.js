@@ -3,10 +3,13 @@ const Event = artifacts.require("Event");
 
 
 class LocationStruct{
-    constructor(name, capacity, price){
+    constructor(ID, name, ticketsEmited, capacity, basePrice, ticketsIDsForSale){
+        this.ID = ID.toNumber();
         this.name = name;
+        this.ticketsEmited = ticketsEmited.toNumber();
         this.capacity = capacity.toNumber();
-        this.price = price.toNumber();
+        this.basePrice = basePrice.toNumber();
+        this.ticketsIDsForSale = ticketsIDsForSale;
     }
 }
 
@@ -22,11 +25,9 @@ class TicketStruct{
 contract('Event test', async (accounts) => {
 
     let instance;
-    let [
-        contractAccount,
-        eventAccount,
-        buyerAccount, 
-        ...rest] = accounts;
+    let contractAccount = accounts[0];
+    let eventAccount = accounts[1];
+    let buyerAccount = accounts[2];
     let event;
     let location;
 
@@ -43,10 +44,17 @@ contract('Event test', async (accounts) => {
         assert.equal(receipt.logs[0].event, "EventCreated", "the event type is correct");
         assert.isDefined(receipt.logs[0].args.event_, "The event address is defined");
 
+        let eventsCount = await instance.eventsCount(eventAccount);
 
-        assert.equal(
-            receipt.logs[0].args.event_,
-            await instance.events(eventAccount,0),
+        let theSame = false;
+        for (let i=0; i<eventsCount; i++){
+            theSame = ( receipt.logs[0].args.event_ ==
+                await instance.events(eventAccount,0) );
+            if (theSame)
+                break;
+        }
+        assert.isTrue(
+            theSame,
             "The EventCreated address and the stored address are the same.");
 
         let eventAddress = receipt.logs[0].args.event_;
@@ -79,9 +87,11 @@ contract('Event test', async (accounts) => {
 
         location = new LocationStruct(...await event.locations(locationID));
 
+        assert.equal(location.ID, locationID, "The location ID is correct");
         assert.equal(location.name, locationName, "The location name is correct");
+        assert.equal(location.ticketsEmited, 0, "The location tickets emited is correct");
         assert.equal(location.capacity, locationCapacity, "The location capacity is correct");
-        assert.equal(location.price, locationPrice, "The location price is correct");
+        assert.equal(location.basePrice, locationPrice, "The location base price is correct");
 
     });
 
@@ -127,7 +137,7 @@ contract('Event test', async (accounts) => {
 
         assert.equal(location.name, locationName, "The location name is correct");
         assert.equal(location.capacity, locationCapacity, "The location capacity is correct");
-        assert.equal(location.price, locationPrice, "The location price is correct");
+        assert.equal(location.basePrice, locationPrice, "The location price is correct");
 
     });
 
@@ -157,8 +167,8 @@ contract('Event test', async (accounts) => {
         let locationQuantity = 2;
 
         let receipt = await event.buyLocations(
-            locationID,
-            locationQuantity,
+            [locationID],
+            [locationQuantity],
             {from: buyerAccount,
             value:location.price}
             );
