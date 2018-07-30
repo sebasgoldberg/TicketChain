@@ -36,11 +36,37 @@ contract Event is Ownable{
     event LocationAdded(address indexed event_, uint indexed locationID);
     event LocationChanged(address indexed event_, uint indexed locationID);
     event TicketSold(address indexed event_, uint indexed ticketID);
+    event TicketCreated(address indexed event_, uint indexed ticketID);
 
     constructor(address _owner, string _name) public Ownable() {
         owner = _owner;
         name = _name;
     }
+
+    function createTicket(Location storage location, bool forSale) internal onlyOwner{
+        uint ID = tickets.length;
+        tickets.push(Ticket(ID, msg.sender, location.ID, forSale, location.basePrice));
+        location.ticketsEmited--;
+        if (forSale)
+            location.ticketsIDsForSale.push(ID);
+        emit TicketCreated(address(this), ID);
+    }
+
+    function createTickets(uint locationID, uint quantity, bool forSale)
+        onlyOwner public {
+
+        Location storage location = locations[locationID];
+
+        require(
+            (location.capacity-location.ticketsEmited-quantity)>=0,
+            "The quantity of created tickets should be lower or equal than capacity.");
+
+        for (uint i=0; i<quantity; i++){
+            createTicket(location, forSale);
+        }
+            
+    }
+
 
     function addLocation(string _name, uint capacity,
         uint price)
@@ -67,6 +93,24 @@ contract Event is Ownable{
         location.capacity = capacity;
         location.basePrice = price;
     }
+
+    /// Buy the required quantity for the specified location 
+    function buyLocations(uint locationID,
+        uint quantity) public payable{
+
+        // All the requested locations and quantities are available for sale.
+        require(areLocationsAvailable(locationID, quantity),
+            "The requested quantities per location are not completely available.");
+
+        // For each location and its quantities, are obtained the possible
+        // tickets.
+        uint[] memory ticketsIDs = selectTickets(
+            locationID, quantity);
+
+        buyTickets(ticketsIDs);
+
+    }
+
 
     /// Buy the required locations and the required quantities for the
     /// specified locations.
@@ -146,6 +190,10 @@ contract Event is Ownable{
         require(a.length == b.length, message);
     }
 
+    function areLocationsAvailable(uint locationID, uint quantity) public view returns(bool available){
+        return (locations[locationID].ticketsIDsForSale.length >= quantity);
+    }
+
     function areLocationsAvailable(uint[] locationIDs,
         uint[] locationQuantities) public view returns(bool available){
 
@@ -153,10 +201,10 @@ contract Event is Ownable{
         requireSameLegth(locationIDs, locationQuantities,
             "locationIDs and locationQuantities parameters, must have the same length.");
 
-        uint length = locations.length;
+        uint length = locationIDs.length;
 
         for (uint i; i<length; i++){
-            if (locations[i].ticketsIDsForSale.length < locationQuantities[i])
+            if (!areLocationsAvailable(locationIDs[i],locationQuantities[i]))
                 return false;
         }
 

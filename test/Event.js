@@ -15,9 +15,12 @@ class LocationStruct{
 
 
 class TicketStruct{
-    constructor(owner, locationID){
+    constructor(ID, owner, locationID, isForSale, price){
+        this.ID = ID.toNumber();
         this.owner = owner;
         this.locationID = locationID.toNumber();
+        this.isForSale = isForSale;
+        this.price = price.toNumber();
     }
 }
 
@@ -161,14 +164,92 @@ contract('Event test', async (accounts) => {
 
     });
 
+    it("Shoul be possible to create tickets and put them for sale.", async () => {
+
+        let quantity = 5;
+        let putForSale = true;
+
+        // The tickets are created and are for sale.
+
+        let receipt = await event.createTickets(
+            location.ID,
+            quantity,
+            putForSale,
+            {from: eventAccount}
+            );
+
+        assert.equal(receipt.logs.length, quantity, "The quantity of created tickets is correct");
+
+        receipt.logs.map( log => {
+
+            assert.equal(log.event, "TicketCreated", "the event type is correct");
+            assert.equal(log.args.event_, event.address, "The event address is correct");
+            return log.args.ticketID;
+
+        }).forEach( async ticketID => {
+
+            let ticket = new TicketStruct(...await event.tickets(ticketID));
+
+            assert.equal(ticket.owner, eventAccount, "The ticket owner is correct");
+            assert.equal(ticket.locationID, location.ID, "The location ID is correct");
+            assert.isTrue(ticket.isForSale, "The ticket is for sale");
+            assert.equal(ticket.price, location.basePrice, "The ticket price is the location base price");
+        });
+
+
+        // The event owner only can create tickets and put them for sale.
+
+        try {
+
+            await event.createTickets(
+                location.ID,
+                quantity,
+                putForSale,
+                {from: buyerAccount}
+                );
+            assert.fail("Only the event owner can create tickets.");
+        } catch (e) {
+            assert(e.message.indexOf('revert') >= 0, "The error message should contain revert.");
+        }
+
+        // The tickets created for locations can't be more than location's capacity.
+
+        try {
+
+            await event.createTickets(
+                location.ID,
+                quantity*10000000,
+                putForSale,
+                {from: eventAccount}
+                );
+            assert.fail("The quantity should be low than or equal de location's capacity.");
+        } catch (e) {
+            assert(e.message.indexOf('revert') >= 0, "The error message should contain revert.");
+        }
+
+    });
+
+    it("Shoul be possible to verify availability.", async () => {
+
+        let locationQuantity = 2;
+
+        let locationsAvailable = await event.areLocationsAvailable(
+            location.ID,
+            locationQuantity,
+            );
+
+        assert.isTrue(locationsAvailable, "The locations are not available");
+
+    });
+
     it("Should be possible to buy tickets.", async () => {
 
         let locationID = 0;
         let locationQuantity = 2;
 
         let receipt = await event.buyLocations(
-            [locationID],
-            [locationQuantity],
+            locationID,
+            locationQuantity,
             {from: buyerAccount,
             value:location.price}
             );
