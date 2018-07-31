@@ -120,11 +120,11 @@ contract('Event test', async (accounts) => {
     it("Should be possible to change a location for an event", async () => {
 
         let locationName = "Location Z";
-        let locationCapacity = 200;
+        let locationCapacity = 11;
         let locationPrice = web3.toWei(.3, 'ether');
 
         let receipt = await event.changeLocation(
-            0,
+            location.ID,
             locationName,
             locationCapacity,
             locationPrice,
@@ -152,7 +152,7 @@ contract('Event test', async (accounts) => {
 
         try {
             await event.changeLocation(
-                0,
+                location.ID,
                 locationName,
                 locationCapacity,
                 locationPrice
@@ -165,6 +165,9 @@ contract('Event test', async (accounts) => {
     });
 
     it("Shoul be possible to create tickets and put them for sale.", async () => {
+
+        let pendingTicketsToEmit = (await event.pendingTicketsToEmit.call(location.ID)).toNumber();
+        let locationT0 = new LocationStruct(... await event.locations.call(location.ID))
 
         let quantity = 5;
         let putForSale = true;
@@ -196,8 +199,21 @@ contract('Event test', async (accounts) => {
             assert.equal(ticket.price, location.basePrice, "The ticket price is the location base price");
         });
 
+        let locationT1 = new LocationStruct(... await event.locations.call(location.ID))
 
+        assert.equal(locationT0.capacity, locationT1.capacity, "The capacity did not change.");
+        assert.equal(locationT0.ticketsEmited+quantity, locationT1.ticketsEmited, "The ticketsEmited was incremented by quantity.");
+        assert.equal(pendingTicketsToEmit-quantity,
+            (await event.pendingTicketsToEmit.call(location.ID)).toNumber(),
+            "The pending tickets is correct.");
+
+    });
+
+    it("Shoul only the event owner can create tickets.", async () => {
         // The event owner only can create tickets and put them for sale.
+
+        let quantity = 1;
+        let putForSale = true;
 
         try {
 
@@ -212,18 +228,24 @@ contract('Event test', async (accounts) => {
             assert(e.message.indexOf('revert') >= 0, "The error message should contain revert.");
         }
 
+    });
+
+    it("Shoul only be possible to create as many tickets as the capacity.", async () => {
         // The tickets created for locations can't be more than location's capacity.
+        let quantity = 12;
+        let putForSale = true;
 
         try {
 
             await event.createTickets(
                 location.ID,
-                quantity*10000000,
+                quantity,
                 putForSale,
                 {from: eventAccount}
                 );
             assert.fail("The quantity should be low than or equal de location's capacity.");
         } catch (e) {
+            throw(e);
             assert(e.message.indexOf('revert') >= 0, "The error message should contain revert.");
         }
 

@@ -46,10 +46,15 @@ contract Event is Ownable{
     function createTicket(Location storage location, bool forSale) internal onlyOwner{
         uint ID = tickets.length;
         tickets.push(Ticket(ID, msg.sender, location.ID, forSale, location.basePrice));
-        location.ticketsEmited--;
+        location.ticketsEmited++;
         if (forSale)
             location.ticketsIDsForSale.push(ID);
         emit TicketCreated(address(this), ID);
+    }
+
+    function pendingTicketsToEmit(uint locationID) view public returns(uint){
+        Location storage location = locations[locationID];
+        return (location.capacity - location.ticketsEmited);
     }
 
     function createTickets(uint locationID, uint quantity, bool forSale)
@@ -58,7 +63,7 @@ contract Event is Ownable{
         Location storage location = locations[locationID];
 
         require(
-            (location.capacity-location.ticketsEmited-quantity)>=0,
+            pendingTicketsToEmit(location.ID) >= quantity,
             "The quantity of created tickets should be lower or equal than capacity.");
 
         for (uint i=0; i<quantity; i++){
@@ -77,8 +82,6 @@ contract Event is Ownable{
         uint ID = locations.length;
         locations.push(Location(locations.length, _name,
             0, capacity, price, new uint[](0)));
-
-
 
     }
 
