@@ -98,7 +98,7 @@ contract Event is Ownable{
     }
 
     /// Buy the required quantity for the specified location 
-    function buyLocations(uint locationID,
+    function buyLocation(uint locationID,
         uint quantity) public payable{
 
         // All the requested locations and quantities are available for sale.
@@ -113,7 +113,6 @@ contract Event is Ownable{
         buyTickets(ticketsIDs);
 
     }
-
 
     /// Buy the required locations and the required quantities for the
     /// specified locations.

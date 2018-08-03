@@ -245,7 +245,6 @@ contract('Event test', async (accounts) => {
                 );
             assert.fail("The quantity should be low than or equal de location's capacity.");
         } catch (e) {
-            throw(e);
             assert(e.message.indexOf('revert') >= 0, "The error message should contain revert.");
         }
 
@@ -264,12 +263,92 @@ contract('Event test', async (accounts) => {
 
     });
 
+    it("Shoul be possible to query the ticket selection.", async () => {
+
+        let locationQuantity = 2;
+
+        let tickets = await event.selectTickets(
+            location.ID,
+            locationQuantity,
+            );
+
+        assert.equal(tickets.length, locationQuantity, "The quantity of tickets is correct.");
+
+        tickets.forEach(async ticketID => {
+            let ticket = new TicketStruct(...await event.tickets(ticketID));
+
+            assert.equal(ticket.locationID, location.ID, "The location ID is correct");
+            assert.isTrue(ticket.isForSale, "The ticket is for sale");
+        });
+
+    });
+
+    it("Shoul be possible to get the value for the selected tickets.", async () => {
+
+        let locationQuantity = 2;
+
+        let tickets = await event.selectTickets(
+            location.ID,
+            locationQuantity,
+            );
+
+        let value = await event.getTicketsValue(
+            tickets);
+
+    
+        let expectedValue = tickets.reduce( async(sum, ticketID) => {
+            let ticket = await event.tickets(ticketID.toNumber());
+            let ticketStruct = new TicketStruct(... ticket);
+            if (sum == 0)
+                return parseFloat(sum) + parseFloat(web3.fromWei(ticketStruct.price, 'ether'));
+            throw parseFloat(sum) + parseFloat(web3.fromWei(ticketStruct.price, 'ether'));
+        }, 0);
+
+        //let expectedValue = prices.reduce( (sum, price) => sum + price, 0);
+
+        assert.equal( web3.fromWei(value.toNumber(), 'ether'), expectedValue, "The tickests' value is correct.");
+
+    });
+
+    it("Shoul be possible to query and buy the selected tickets.", async () => {
+
+        let locationQuantity = 2;
+
+        let tickets = await event.selectTickets(
+            location.ID,
+            locationQuantity,
+            );
+
+        let receipt = await event.buyTickets(
+            tickets.map(ticketID => ticketID.toNumber()));
+
+        assert.equal(receipt.logs.length, 2, "an event was triggered");
+        assert.equal(receipt.logs[0].event, "TicketBuyed", "the event type is correct");
+        assert.equal(receipt.logs[0].args.event_, event.address, "The event address is correct");
+        assert.isDefined(receipt.logs[0].args.ticketID, "The ticket ID is correct");
+        assert.equal(receipt.logs[1].event, "TicketBuyed", "the event type is correct");
+        assert.equal(receipt.logs[1].args.event_, event.address, "The event address is correct");
+        assert.isDefined(receipt.logs[1].args.ticketID, "The ticket ID is correct");
+
+        receipt.logs.map( log => log.args.ticketID ).forEach( async ticketID => {
+            let ticket = new TicketStruct(...await event.tickets(ticketID));
+
+            assert.equal(ticket.owner, buyerAccount, "The ticket owner is correct");
+            assert.equal(ticket.locationID, locationID, "The location ID is correct");
+            assert.isFalse(ticket.isForSale, "The ticket is not for sale");
+        });
+
+        assert.equal(await event.balance(), locationQuantity*location.price,
+            "The contract balance is the value spent in the tickets");
+ 
+    });
+
     it("Should be possible to buy tickets.", async () => {
 
         let locationID = 0;
         let locationQuantity = 2;
 
-        let receipt = await event.buyLocations(
+        let receipt = await event.buyLocation(
             locationID,
             locationQuantity,
             {from: buyerAccount,
@@ -284,12 +363,12 @@ contract('Event test', async (accounts) => {
         assert.equal(receipt.logs[1].args.event_, event.address, "The event address is correct");
         assert.isDefined(receipt.logs[1].args.ticketID, "The ticket ID is correct");
 
-        receipt.logs.map( log => log.args.ticketID).forEach( async ticketID => {
+        receipt.logs.map( log => log.args.ticketID ).forEach( async ticketID => {
             let ticket = new TicketStruct(...await event.tickets(ticketID));
 
             assert.equal(ticket.owner, buyerAccount, "The ticket owner is correct");
             assert.equal(ticket.locationID, locationID, "The location ID is correct");
-            assert.isFalse(event.ticketForSale(ticketID), "The ticket is not for sale");
+            assert.isFalse(ticket.isForSale, "The ticket is not for sale");
         });
 
         assert.equal(await event.balance(), locationQuantity*location.price,
