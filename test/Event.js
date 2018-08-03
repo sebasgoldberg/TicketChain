@@ -295,16 +295,13 @@ contract('Event test', async (accounts) => {
         let value = await event.getTicketsValue(
             tickets);
 
-    
-        let expectedValue = tickets.reduce( async(sum, ticketID) => {
+        let expectedValue = 0;
+        for (let i=0; i<tickets.length; i++){
+            let ticketID = tickets[i];
             let ticket = await event.tickets(ticketID.toNumber());
             let ticketStruct = new TicketStruct(... ticket);
-            if (sum == 0)
-                return parseFloat(sum) + parseFloat(web3.fromWei(ticketStruct.price, 'ether'));
-            throw parseFloat(sum) + parseFloat(web3.fromWei(ticketStruct.price, 'ether'));
-        }, 0);
-
-        //let expectedValue = prices.reduce( (sum, price) => sum + price, 0);
+            expectedValue += parseFloat(web3.fromWei(ticketStruct.price, 'ether'));
+        }
 
         assert.equal( web3.fromWei(value.toNumber(), 'ether'), expectedValue, "The tickests' value is correct.");
 
