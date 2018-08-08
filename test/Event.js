@@ -8,7 +8,7 @@ class LocationStruct{
         this.name = name;
         this.ticketsEmited = ticketsEmited.toNumber();
         this.capacity = capacity.toNumber();
-        this.basePrice = basePrice.toNumber();
+        this.basePrice = basePrice;
         this.ticketsIDsForSale = ticketsIDsForSale;
     }
 }
@@ -20,7 +20,7 @@ class TicketStruct{
         this.owner = owner;
         this.locationID = locationID.toNumber();
         this.isForSale = isForSale;
-        this.price = price.toNumber();
+        this.price = price;
     }
 }
 
@@ -196,7 +196,7 @@ contract('Event test', async (accounts) => {
             assert.equal(ticket.owner, eventAccount, "The ticket owner is correct");
             assert.equal(ticket.locationID, location.ID, "The location ID is correct");
             assert.isTrue(ticket.isForSale, "The ticket is for sale");
-            assert.equal(ticket.price, location.basePrice, "The ticket price is the location base price");
+            assert.equal(ticket.price.toString(10), location.basePrice.toString(10), "The ticket price is the location base price");
         });
 
         let locationT1 = new LocationStruct(... await event.locations.call(location.ID))
@@ -316,14 +316,18 @@ contract('Event test', async (accounts) => {
             locationQuantity,
             );
 
+        let value = await event.getTicketsValue(
+            tickets);
+
         let receipt = await event.buyTickets(
-            tickets.map(ticketID => ticketID.toNumber()));
+            tickets.map(ticketID => ticketID.toNumber()),
+            {from: buyerAccount, value: value});
 
         assert.equal(receipt.logs.length, 2, "an event was triggered");
-        assert.equal(receipt.logs[0].event, "TicketBuyed", "the event type is correct");
+        assert.equal(receipt.logs[0].event, "TicketSold", "the event type is correct");
         assert.equal(receipt.logs[0].args.event_, event.address, "The event address is correct");
         assert.isDefined(receipt.logs[0].args.ticketID, "The ticket ID is correct");
-        assert.equal(receipt.logs[1].event, "TicketBuyed", "the event type is correct");
+        assert.equal(receipt.logs[1].event, "TicketSold", "the event type is correct");
         assert.equal(receipt.logs[1].args.event_, event.address, "The event address is correct");
         assert.isDefined(receipt.logs[1].args.ticketID, "The ticket ID is correct");
 
@@ -331,11 +335,13 @@ contract('Event test', async (accounts) => {
             let ticket = new TicketStruct(...await event.tickets(ticketID));
 
             assert.equal(ticket.owner, buyerAccount, "The ticket owner is correct");
-            assert.equal(ticket.locationID, locationID, "The location ID is correct");
+            assert.equal(ticket.locationID, location.ID, "The location ID is correct");
             assert.isFalse(ticket.isForSale, "The ticket is not for sale");
         });
 
-        assert.equal(await event.balance(), locationQuantity*location.price,
+        assert.equal(
+            (await web3.eth.getBalance(event.address)).toString(10),
+            location.basePrice.times(locationQuantity).toString(10),
             "The contract balance is the value spent in the tickets");
  
     });

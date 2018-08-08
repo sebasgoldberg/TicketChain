@@ -2,10 +2,12 @@ pragma solidity ^0.4.24;
 
 import './Ownable.sol';
 import './ArrayUtil.sol';
+import './Ticket.sol';
 
 contract Event is Ownable{
 
     using ArrayUtil for uint[];
+    using TicketLib for TicketLib.Ticket;
 
     string public name;
     // js: new Date(date).getTime()/1000 == date
@@ -21,21 +23,12 @@ contract Event is Ownable{
         uint[] ticketsIDsForSale;
         }
 
-    struct Ticket {
-        uint ID;
-        address owner;
-        uint locationID;
-        bool isForSale;
-        uint price;
-        }
-
     Location[] public locations;
-    Ticket[] public tickets;
+    TicketLib.Ticket[] public tickets;
     mapping( address => uint ) public balances;
 
     event LocationAdded(address indexed event_, uint indexed locationID);
     event LocationChanged(address indexed event_, uint indexed locationID);
-    event TicketSold(address indexed event_, uint indexed ticketID);
     event TicketCreated(address indexed event_, uint indexed ticketID);
 
     constructor(address _owner, string _name) public Ownable() {
@@ -45,7 +38,7 @@ contract Event is Ownable{
 
     function createTicket(Location storage location, bool forSale) internal onlyOwner{
         uint ID = tickets.length;
-        tickets.push(Ticket(ID, msg.sender, location.ID, forSale, location.basePrice));
+        tickets.push(TicketLib.Ticket(ID, msg.sender, location.ID, forSale, location.basePrice));
         location.ticketsEmited++;
         if (forSale)
             location.ticketsIDsForSale.push(ID);
@@ -136,25 +129,18 @@ contract Event is Ownable{
 
     }
 
-    function sellTicket(Ticket ticket) internal {
+    function sellTicket(TicketLib.Ticket storage ticket) internal {
 
-        emit TicketSold(address(this), ticket.ID);
-        require(ticket.isForSale, "A ticket specified is not for sale.");
+        Location storage location = locations[ticket.locationID];
+        ticket.sell(location.ticketsIDsForSale);
         balances[ticket.owner] += ticket.price;
-        ticket.owner = msg.sender;
-        removeTicketFromSale(ticket.ID);
 
     }
 
     function removeTicketFromSale(uint ticketID) public {
-        Ticket storage ticket = tickets[ticketID];
-        require(ticket.owner == msg.sender,
-            "Only the owner of the ticket can remove the ticket from sale.");
-        require(ticket.isForSale, "A ticket specified is not for sale.");
-        ticket.isForSale = false;
+        TicketLib.Ticket storage ticket = tickets[ticketID];
         Location storage location = locations[ticket.locationID];
-        location.ticketsIDsForSale.removeByValue(ticket.ID);
-        location.ticketsIDsForSale.length--;
+        ticket.removeFromSale(location.ticketsIDsForSale);
     }
 
     function buyTickets(uint[] ticketsIDs) public payable{
@@ -169,9 +155,12 @@ contract Event is Ownable{
         uint balance = msg.value;
 
         for (uint i; i<ticketsIDs.length; i++){
-            Ticket storage ticket = tickets[ticketsIDs[i]];
+            TicketLib.Ticket storage ticket = tickets[ticketsIDs[i]];
             balance -= ticket.price;
-            sellTicket(ticket);
+            //sellTicket(ticket);
+            Location storage location = locations[ticket.locationID];
+            ticket.sell(location.ticketsIDsForSale);
+            balances[ticket.owner] += ticket.price;
         }
 
         assert(ticketsValue+balance == msg.value);
