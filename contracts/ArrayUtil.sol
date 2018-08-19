@@ -10,17 +10,22 @@ library ArrayUtil {
     }
 
     /** Finds the index of a given value in an array. */
-    function indexOf(uint[] self, uint value) public pure returns(uint) {
+    function indexOf(uint[] self, uint value) public pure returns(uint index, bool found) {
         uint i = 0;
-        while (self[i] != value) {
+        while (i<self.length) {
+            if (self[i] == value)
+                return (i, true);
             i++;
         }
-        return i;
+        return (0, false);
     }
  
     /** Removes the given value in an array. */
     function removeByValue(uint[] storage self, uint value) public {
-        uint i = indexOf(self, value);
+        uint i;
+        bool found;
+        (i, found) = indexOf(self, value);
+        require(found, "Value to be removed not found.");
         removeByIndex(self, i);
     }
  
@@ -33,5 +38,19 @@ library ArrayUtil {
             i++;
         }
         self.length--;
+    }
+
+    function isUnique(uint[] self) public pure returns(bool){
+        uint[] memory visited = new uint[](0);
+        uint i = 0;
+        bool found;
+        while(i<self.length){
+            (,found) = indexOf(visited, self[i]); 
+            if (found)
+                return false;
+            visited[i] = self[i];
+            i++;
+        }
+        return true;
     }
 }
