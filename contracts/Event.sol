@@ -14,9 +14,27 @@ contract Event is Ownable{
         event_.name = _name;
     }
 
-    function pendingTicketsToEmit(uint locationID) view public returns(uint){
-        return event_.pendingTicketsToEmit(locationID);
+    /*******************************************************************
+                                Payable
+    *******************************************************************/
+
+    function buyLocation(uint locationID,
+        uint quantity) public payable{
+        event_.buyLocation(locationID, quantity);
     }
+
+    function buyTickets(uint[] ticketsIDs) public payable{
+        event_.buyTickets(ticketsIDs);
+    }
+
+    function buyLocations(uint[] locationIDs,
+        uint[] locationQuantities) public payable{
+        event_.buyLocations(locationIDs, locationQuantities);
+    }
+
+    /*******************************************************************
+                                Public
+    *******************************************************************/
 
     function createTickets(uint locationID, uint quantity, bool forSale)
         onlyOwner public {
@@ -35,22 +53,16 @@ contract Event is Ownable{
         event_.changeLocation(locationID, name, capacity, price);
     }
 
-    function buyLocation(uint locationID,
-        uint quantity) public payable{
-        event_.buyLocation(locationID, quantity);
-    }
-
-    function buyLocations(uint[] locationIDs,
-        uint[] locationQuantities) public payable{
-        event_.buyLocations(locationIDs, locationQuantities);
-    }
-
     function removeTicketFromSale(uint ticketID) public {
         event_.removeTicketFromSale(ticketID);
     }
 
-    function buyTickets(uint[] ticketsIDs) public payable{
-        event_.buyTickets(ticketsIDs);
+    /*******************************************************************
+                                Views
+    *******************************************************************/
+
+    function pendingTicketsToEmit(uint locationID) view public returns(uint){
+        return event_.pendingTicketsToEmit(locationID);
     }
 
     function getTicketsValue(uint[] ticketsIDs) view public returns(uint value){
@@ -65,6 +77,7 @@ contract Event is Ownable{
         return event_.hasTicketsForSale(locationID, quantity);
     }
 
+    /*
     function hasTicketsForSale(uint[] locationIDs,
         uint[] locationQuantities) public view returns(bool available){
         return event_.hasTicketsForSale(locationIDs, locationQuantities);
@@ -74,9 +87,38 @@ contract Event is Ownable{
         uint[] locationQuantities) public view returns(uint[] ticketsIDs){
         return event_.selectTickets(locationIDs, locationQuantities);
     }
+    */
 
     function selectTickets(uint locationID, uint quantity) public view returns(uint[] ticketsIDs) {
         return event_.selectTickets(locationID, quantity);
+    }
+
+    function name() public view returns(string){
+        return event_.name;
+    }
+
+    function locations(uint locationID) public view returns(
+        uint ID, string _name, uint ticketsEmited, uint capacity,
+        uint basePrice){
+
+        LocationLib.Location storage location = event_.locations[locationID];
+        return (
+            location.ID, location.name, location.ticketsEmited,
+            location.capacity, location.basePrice);
+    }
+
+    function tickets(uint ticketID) public view returns(
+        uint ID, address owner, uint locationID, bool isForSale,
+        uint price){
+
+        TicketLib.Ticket storage ticket = event_.tickets[ticketID];
+        return (
+            ticket.ID, ticket.owner, ticket.locationID,
+            ticket.isForSale, ticket.price);
+    }
+
+    function balances(address owner) public view returns(uint){
+        return event_.balances[owner];
     }
 
 }

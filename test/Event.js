@@ -254,7 +254,7 @@ contract('Event test', async (accounts) => {
 
         let locationQuantity = 2;
 
-        let locationsAvailable = await event.areLocationsAvailable(
+        let locationsAvailable = await event.hasTicketsForSale(
             location.ID,
             locationQuantity,
             );
@@ -350,19 +350,20 @@ contract('Event test', async (accounts) => {
 
         let locationID = 0;
         let locationQuantity = 2;
+        let initialBalance = await web3.eth.getBalance(event.address);
 
         let receipt = await event.buyLocation(
-            locationID,
+            location.ID,
             locationQuantity,
             {from: buyerAccount,
-            value:location.price}
+            value:location.basePrice.times(locationQuantity)}
             );
 
         assert.equal(receipt.logs.length, 2, "an event was triggered");
-        assert.equal(receipt.logs[0].event, "TicketBuyed", "the event type is correct");
+        assert.equal(receipt.logs[0].event, "TicketSold", "the event type is correct");
         assert.equal(receipt.logs[0].args.event_, event.address, "The event address is correct");
         assert.isDefined(receipt.logs[0].args.ticketID, "The ticket ID is correct");
-        assert.equal(receipt.logs[1].event, "TicketBuyed", "the event type is correct");
+        assert.equal(receipt.logs[1].event, "TicketSold", "the event type is correct");
         assert.equal(receipt.logs[1].args.event_, event.address, "The event address is correct");
         assert.isDefined(receipt.logs[1].args.ticketID, "The ticket ID is correct");
 
@@ -370,12 +371,14 @@ contract('Event test', async (accounts) => {
             let ticket = new TicketStruct(...await event.tickets(ticketID));
 
             assert.equal(ticket.owner, buyerAccount, "The ticket owner is correct");
-            assert.equal(ticket.locationID, locationID, "The location ID is correct");
+            assert.equal(ticket.locationID, location.ID, "The location ID is correct");
             assert.isFalse(ticket.isForSale, "The ticket is not for sale");
         });
 
-        assert.equal(await event.balance(), locationQuantity*location.price,
-            "The contract balance is the value spent in the tickets");
+        assert.equal(
+            (await web3.eth.getBalance(event.address)).toString(10),
+            location.basePrice.times(locationQuantity).plus(initialBalance).toString(10),
+            "The contract balance is the value spent in the tickets plus the initial balance");
 
     });
 

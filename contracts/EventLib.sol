@@ -136,8 +136,8 @@ library EventLib{
 
         for (uint i; i<ticketsIDs.length; i++){
 
-            LocationLib.Location storage location = self.locations[ticket.locationID];
             TicketLib.Ticket storage ticket = self.tickets[ticketsIDs[i]];
+            LocationLib.Location storage location = self.locations[ticket.locationID];
 
             location.sellTicket(ticket);
 
@@ -216,6 +216,4 @@ library EventLib{
     }
 
 }
-
-
 
